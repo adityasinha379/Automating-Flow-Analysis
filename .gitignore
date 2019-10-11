@@ -3,3 +3,4 @@ Results/
 run.py
 script.sh
 *.csv
+.*
