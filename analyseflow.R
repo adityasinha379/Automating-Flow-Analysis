@@ -10,7 +10,7 @@ require(mixtools)
 require(pheatmap)
 
 # Read and explore data ####
-d <- read.table(file="Data/Lineage_Tumor_635_comp.txt", header=TRUE,sep=",")
+d <- read.table(file="Data/chRCC_638T_Lineage.txt", header=TRUE,sep=",")
 
 # pick out required columns, leave out CD45 and LD (already gated)
 d_comp <- d[c(9:15,17:20)]
@@ -28,29 +28,26 @@ for (i in c(1:n))
 grid.arrange(grobs = p, ncol = 4)
 remove(p)
 
-# Outlier Removal (unused)####
-d_comp <- d[c(8:20)]
-colnames(d_comp) <- c("CD45","KIR2D3D","GzmA","GzmB","CD8a","NKG2A","CD56","TCRab","LD","CD4","CD49a","CD103","CD16")
-d_trans<-as.data.frame(apply(d_comp,2,trans))
-temp<-boxplot(d_trans$LD, plot=FALSE)$out
-temp<-temp[temp>mean(d_trans$LD)]
-d_trans <- d_trans[which(!(d_trans$LD %in% temp)),]
-temp<-boxplot(d_trans$CD45, plot=FALSE)$out
-temp<-temp[temp<mean(d_trans$CD45)]
-d_trans <- d_trans[which(!(d_trans$CD45 %in% temp)),c(2:8,10:13)]
-d_comp <- d_comp[rownames(d_trans),c(2:8,10:13)]
-remove(temp)
-
 # Transformation ####
 #for checking the shape of the transform
 #x<-seq(-1e4,1e4,10)
 #y<-lapply(x,trans)
 #plot(x,y,type='l')
 #remove(x,y)
+# THOT
+# -10^(-4.5+0.8*2)*sapply(d_comp,max)
+# (4.5-log10(max(d_comp)/abs(-30)))/2
 
-trans <- logicleTransform(w = 0.8, t = max(d_comp), m = 4.5, a = 0)
+# trans <- logicleTransform(w = 0.8, t = max(d_comp), m = 4.5, a = 0)
+# d_trans<-as.data.frame(apply(d_comp,2,trans))
+trans <- vector("list",n)
+w = c(0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8)
+for (i in 1:n){
+  trans[[i]] <- logicleTransform(w = w[i], t = max(d_comp), m = 4.5, a = 0)
+}
 
-d_trans<-as.data.frame(apply(d_comp,2,trans))
+temp <- as.data.frame(do.call(cbind, lapply(1:ncol(d_comp), function(c) trans[[c]](d_comp[, c]))))
+colnames(temp)<-colnames(d_comp)
 
 ggplot(d_trans, aes(x=GzmB,y=CD8a)) + geom_point(color='coral', size=0.3) + ggtitle("Logicle")
 ggplot(d_comp, aes(x=GzmB,y=CD8a)) + geom_point(color='coral', size=0.3) + ggtitle("Compensated")
@@ -173,6 +170,23 @@ for(i in c(1:c)){
 grid.arrange(grobs = p, ncol = 2)
 remove(p,temp,temp2,titles,sub,select,idx)
 
+
+# Cluster Memberships in Scatter Plot ####
+select <- c(5)
+idx1 <- which(d_tsne$cluster %in% select)
+idx2 <- c(1:m)[!c(1:m) %in% idx1]
+temp <- d_trans
+temp$select <- as.character(d_tsne$cluster)
+temp$select[idx1] <- "1"
+temp$select[idx2] <- "0"
+temp$select <- as.factor(temp$select)
+ggplot(d_tsne, aes(y=bhSNE2, x=bhSNE1, col=temp$select)) + geom_point(size=0.8) + 
+  scale_colour_manual(values=c("gray", "magenta")) + guides(col=FALSE) + 
+  ggtitle(paste("Clusters",paste(select, collapse = ",")))
+ggplot(temp, aes(y=CD56, x=CD103, col=select)) + geom_point(size=0.1) + 
+  scale_colour_manual(values=c("gray", "magenta")) + guides(col=FALSE) + 
+  ggtitle(paste("Clusters",paste(select, collapse = ",")))
+remove(temp, select, idx1, idx2)
 # Gating vs Clustering correlation (unused) ####
 pop <- read.csv("temp.csv")
 pop$Gating<-round(pop$Gating,2)
@@ -192,7 +206,6 @@ for(i in c(1:5)){
   print(unlist(cut(as.dendrogram(temp),h=3.93)$lower[[i]]))
 }
 remove(temp)
-
 # Cluster Mean Heatmap (unused) ####
 clustermean <- matrix(nrow = n, ncol = c, dimnames=list(colnames(d_trans),c(1:c)))
 for (i in c(1:c)){
@@ -217,7 +230,6 @@ cluster_freqs <- cluster_freqs + 1
 ggplot(data = temp, aes(x=cell, y=gene, fill=value)) + geom_tile() + scale_fill_gradientn(colours=bluered(16)) + ggtitle("Fluorescence by cluster") +
   scale_x_continuous(breaks=c(cluster_freqs),labels=c(1:c)) + xlab("cluster") + theme(axis.text.x = element_text(face="bold"))
 remove(temp)
-
 
 # Boxplots for gene expression (unused) ####
 idx1 <- which(d_tsne$cluster %in% c(2,4,9,10,12,14,16,15,18,19,22)) # GzmB+
@@ -255,23 +267,6 @@ ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2, col=temp$expression)) +
 
 grid.arrange(grobs = p, ncol = 2)
 remove(p,temp)
-
-# Cluster Memberships in Scatter Plot ####
-select <- c(5)
-idx1 <- which(d_tsne$cluster %in% select)
-idx2 <- c(1:m)[!c(1:m) %in% idx1]
-temp <- d_trans
-temp$select <- as.character(d_tsne$cluster)
-temp$select[idx1] <- "1"
-temp$select[idx2] <- "0"
-temp$select <- as.factor(temp$select)
-ggplot(d_tsne, aes(y=bhSNE2, x=bhSNE1, col=temp$select)) + geom_point(size=0.8) + 
-  scale_colour_manual(values=c("gray", "magenta")) + guides(col=FALSE) + 
-  ggtitle(paste("Clusters",paste(select, collapse = ",")))
-ggplot(temp, aes(y=CD56, x=CD103, col=select)) + geom_point(size=0.1) + 
-  scale_colour_manual(values=c("gray", "magenta")) + guides(col=FALSE) + 
-  ggtitle(paste("Clusters",paste(select, collapse = ",")))
-remove(temp, select, idx1, idx2)
 # Phenograph stability analysis (unused) ####
 # based on a similarity matrix between cluster labelings
 get_simmatrix <- function(d,imax,k_arr){
@@ -395,3 +390,15 @@ ggplot(dm_tsne, aes(x=bhSNE1, y=bhSNE2)) + geom_point(size=0.5) +
   geom_point(data=dm_tsne[1:m1,], x=bhSNE1, y=bhSNE2, size=0.5)
 ggplot(dm_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=0.5) + 
   geom_point(data=dm_tsne[m1+1:m,], x=bhSNE1, y=bhSNE2, size=0.5)
+# Outlier Removal (unused)####
+d_comp <- d[c(8:20)]
+colnames(d_comp) <- c("CD45","KIR2D3D","GzmA","GzmB","CD8a","NKG2A","CD56","TCRab","LD","CD4","CD49a","CD103","CD16")
+d_trans<-as.data.frame(apply(d_comp,2,trans))
+temp<-boxplot(d_trans$LD, plot=FALSE)$out
+temp<-temp[temp>mean(d_trans$LD)]
+d_trans <- d_trans[which(!(d_trans$LD %in% temp)),]
+temp<-boxplot(d_trans$CD45, plot=FALSE)$out
+temp<-temp[temp<mean(d_trans$CD45)]
+d_trans <- d_trans[which(!(d_trans$CD45 %in% temp)),c(2:8,10:13)]
+d_comp <- d_comp[rownames(d_trans),c(2:8,10:13)]
+remove(temp)
