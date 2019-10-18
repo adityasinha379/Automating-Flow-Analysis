@@ -10,11 +10,11 @@ require(mixtools)
 require(pheatmap)
 
 # Read and explore data ####
-d <- read.table(file="Data/chRCC_638T_Lineage.txt", header=TRUE,sep=",")
+d <- read.table(file="Data/ccRCC_652T_Lineage.txt", header=TRUE,sep=",")
 
 # pick out required columns, leave out CD45 and LD (already gated)
 d_comp <- d[c(9:15,17:20)]
-colnames(d_comp) <- c("KIR2D3D","GzmA","GzmB","CD8a","NKG2A","CD56","TCRab","CD4","CD49a","CD103","CD16")
+colnames(d_comp) <- c("KIR2D3D","GzmA","GzmB","CD8a","NKG2A","CD56","TCRab","CD4","CD49a","TCRgd","CD16")
 m<-nrow(d_comp)
 n<-ncol(d_comp)
 
@@ -29,28 +29,28 @@ grid.arrange(grobs = p, ncol = 4)
 remove(p)
 
 # Transformation ####
-#for checking the shape of the transform
-#x<-seq(-1e4,1e4,10)
-#y<-lapply(x,trans)
-#plot(x,y,type='l')
-#remove(x,y)
-# THOT
-# -10^(-4.5+0.8*2)*sapply(d_comp,max)
-# (4.5-log10(max(d_comp)/abs(-30)))/2
-
-# trans <- logicleTransform(w = 0.8, t = max(d_comp), m = 4.5, a = 0)
-# d_trans<-as.data.frame(apply(d_comp,2,trans))
 trans <- vector("list",n)
-w = c(0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8)
+w <- rep(1,11)
+w[3] <- 0.8
+w[5] <- 0.8 
+w[6] <- 0.8
 for (i in 1:n){
-  trans[[i]] <- logicleTransform(w = w[i], t = max(d_comp), m = 4.5, a = 0)
+  trans[[i]] <- local({
+    i<-i
+    trans1 <- logicleTransform(w = w[i], t = max(d_comp), m = 4.5, a = 0)
+  })
 }
+d_trans <- as.data.frame(do.call(cbind, lapply(1:ncol(d_comp), function(i) trans[[i]](d_comp[, i]))))
+colnames(d_trans)<-colnames(d_comp)
 
-temp <- as.data.frame(do.call(cbind, lapply(1:ncol(d_comp), function(c) trans[[c]](d_comp[, c]))))
-colnames(temp)<-colnames(d_comp)
+#check transform using violin plot
+temp <- melt(d_trans,id.vars=NULL)
+colnames(temp)[1] <- "marker"
+ggplot(temp, aes(x=marker, y=value)) + geom_violin(fill="gray", col="gray") + guides(fill=FALSE) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + ylim(min(d_trans),max(d_trans))
+remove(temp)
+ggplot(d_trans, aes(x=TCRab,y=CD49a)) + geom_point(color='coral', size=0.1) + ggtitle("Logicle")
 
-ggplot(d_trans, aes(x=GzmB,y=CD8a)) + geom_point(color='coral', size=0.3) + ggtitle("Logicle")
-ggplot(d_comp, aes(x=GzmB,y=CD8a)) + geom_point(color='coral', size=0.3) + ggtitle("Compensated")
 
 # Clustering and  Visualization ####
 # tsne embedding
@@ -66,9 +66,9 @@ out <- read.csv("temp.csv")$cluster
 c <- max(out)
 d_tsne$cluster <- factor(out)
 
-ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=1)
+ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=0.1)
 ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2)) +
-  geom_point(aes(col = d_trans$NKG2A)) + scale_color_gradientn(colors=bluered(16))
+  geom_point(aes(col = d_trans$CD16)) + scale_color_gradientn(colors=bluered(16))
 
 # cluster percentages
 cluster_freqs <- as.data.frame(table(out)*100/m)
@@ -94,7 +94,7 @@ for(i in c(1:c)){
   })
 }
 #png(filename="Results/Lineage_Tumor_635_comp/1.2.2.violin-5.png",width=1500,height=898)
-grid.arrange(grobs = p, ncol = 3)
+grid.arrange(grobs = p, ncol = 4)
 #dev.off()
 remove(p,temp,temp2,titles)
 
