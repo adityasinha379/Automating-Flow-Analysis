@@ -19,6 +19,7 @@ remove(temp)
 d_comp <- d[,-which(names(d) %in% c("CD45","LD"))]
 m<-nrow(d_comp)
 n<-ncol(d_comp)
+remove(d)
 
 # for plotting distributions of markers
 p <- vector("list", length = n)
@@ -48,6 +49,7 @@ colnames(temp)[1] <- "marker"
 ggplot(temp, aes(x=marker, y=value)) + geom_violin(fill="gray", col="gray") + guides(fill=FALSE) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + ylim(min(d_trans),max(d_trans))
 remove(temp)
+
 ggplot(d_trans, aes(x=TCRab,y=CD49a)) + geom_point(color='coral', size=0.1) + ggtitle("Logicle")
 
 
@@ -67,12 +69,12 @@ d_tsne$cluster <- factor(out)
 
 ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=0.1)
 ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2)) +
-  geom_point(aes(col = d_trans$CD16)) + scale_color_gradientn(colors=bluered(16))
+  geom_point(aes(col = d_trans$CD16), size=0.1) + scale_color_gradientn(colors=bluered(16))
 
 # cluster percentages
-cluster_freqs <- as.data.frame(table(out)*100/m)
-colnames(cluster_freqs) <- c("cluster","percent")
-ggplot(data=cluster_freqs, aes(x=cluster, y=percent)) + geom_bar(stat="identity")
+cluster_perc <- as.data.frame(table(out)*100/m)
+colnames(cluster_perc) <- c("cluster","percent")
+ggplot(data=cluster_perc, aes(x=cluster, y=percent)) + geom_bar(stat="identity")
 
 # Violin plots ####
 # marker distributions for each cluster
@@ -93,7 +95,7 @@ for(i in c(1:c)){
   })
 }
 #png(filename="Results/Lineage_Tumor_635_comp/1.2.2.violin-5.png",width=1500,height=898)
-grid.arrange(grobs = p, ncol = 4)
+grid.arrange(grobs = p, ncol = floor(c/3)+1)
 #dev.off()
 remove(p,temp,temp2,titles)
 
@@ -364,31 +366,6 @@ ggplot(data = temp, aes(x=cluster, y=gene, fill=log_fold_change)) + geom_tile() 
 remove(temp)
 
 
-# Clustering mixture of patient data (unused) ####
-d_638 <- read.table(file="Data/Lineage_Tumor_638.txt", header=TRUE,sep=",")[c(9:15,17:20)]
-d_641 <- read.table(file="Data/Lineage_Tumor_641.txt", header=TRUE,sep=",")[c(9:15,17:20)]
-m1 <- nrow(d_638)
-m2 <- nrow(d_641)
-dm_comp <- rbind(d_638,d_641)
-colnames(dm_comp) <- c("KIR2D3D","GzmA","GzmB","CD8a","NKG2A","CD56","TCRab","CD4","CD49a","CD103","CD16")
-m <- m1+m2
-dm_trans<-as.data.frame(apply(dm_comp,2,trans))
-dm_tsne <- Rtsne(dm_trans,dims=2)
-dm_tsne <- as.data.frame(dm_tsne[['Y']])
-colnames(dm_tsne)[1] <- 'bhSNE1'
-colnames(dm_tsne)[2] <- 'bhSNE2'
-
-write.csv(dm_trans, "mtemp.csv", row.names = FALSE)
-out <- read.csv("mtemp4000.csv")$cluster
-
-c <- max(out)
-dm_tsne$cluster <- factor(out)
-
-ggplot(dm_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=0.5)
-ggplot(dm_tsne, aes(x=bhSNE1, y=bhSNE2)) + geom_point(size=0.5) + 
-  geom_point(data=dm_tsne[1:m1,], x=bhSNE1, y=bhSNE2, size=0.5)
-ggplot(dm_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=0.5) + 
-  geom_point(data=dm_tsne[m1+1:m,], x=bhSNE1, y=bhSNE2, size=0.5)
 # Outlier Removal (unused)####
 d_comp <- d[c(8:20)]
 colnames(d_comp) <- c("CD45","KIR2D3D","GzmA","GzmB","CD8a","NKG2A","CD56","TCRab","LD","CD4","CD49a","CD103","CD16")
