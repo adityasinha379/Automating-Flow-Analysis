@@ -10,7 +10,8 @@ require(mixtools)
 require(pheatmap)
 
 # Read and explore data ####
-d <- read.table(file="Data/ccRCC_652T_Tcells.txt", header=TRUE,sep="\t")[8:20]
+pat_id <- "ccRCC_643T_Tcells"
+d <- read.table(file=paste("Data/",pat_id,".txt",sep=""), header=TRUE,sep="\t")[8:20]
 temp<- colnames(d)
 colnames(d) <- gsub(".*\\.","",temp)
 remove(temp)
@@ -63,6 +64,7 @@ write.csv(d_trans, "temp.csv", row.names = FALSE)
 out <- read.csv("temp.csv")$cluster
 
 c <- max(out)
+dev.set(2)
 d_tsne$cluster <- factor(out)
 
 ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=0.1)
@@ -93,6 +95,7 @@ for(i in c(1:c)){
   })
 }
 #png(filename="Results/Lineage_Tumor_635_comp/1.2.2.violin-5.png",width=1500,height=898)
+dev.set(4)
 grid.arrange(grobs = p, ncol = floor(c/3)+1)
 #dev.off()
 remove(p,temp,temp2,titles)
