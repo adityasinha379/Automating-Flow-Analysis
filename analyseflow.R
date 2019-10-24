@@ -55,10 +55,8 @@ ggplot(d_trans, aes(x=TCRab,y=CD49a)) + geom_point(color='coral', size=0.1) + gg
 
 # Clustering and  Visualization ####
 # tsne embedding
-d_tsne <- Rtsne(d_trans,dims=2)
-d_tsne <- as.data.frame(d_tsne[['Y']])
-colnames(d_tsne)[1] <- 'bhSNE1'
-colnames(d_tsne)[2] <- 'bhSNE2'
+d_tsne <- as.data.frame(Rtsne(d_trans,dims=2)[['Y']])
+colnames(d_tsne) <- c('bhSNE1','bhSNE2')
 
 write.csv(d_trans, "temp.csv", row.names = FALSE)
 # louvain clustering in python jupyter notebook Clustering.ipynb
