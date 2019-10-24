@@ -10,11 +10,13 @@ require(mixtools)
 require(pheatmap)
 
 # Read and explore data ####
-d <- read.table(file="Data/ccRCC_652T_Lineage.txt", header=TRUE,sep=",")
+d <- read.table(file="Data/ccRCC_652T_Tcells.txt", header=TRUE,sep="\t")[8:20]
+temp<- colnames(d)
+colnames(d) <- gsub(".*\\.","",temp)
+remove(temp)
 
 # pick out required columns, leave out CD45 and LD (already gated)
-d_comp <- d[c(9:15,17:20)]
-colnames(d_comp) <- c("KIR2D3D","GzmA","GzmB","CD8a","NKG2A","CD56","TCRab","CD4","CD49a","TCRgd","CD16")
+d_comp <- d[,-which(names(d) %in% c("CD45","LD"))]
 m<-nrow(d_comp)
 n<-ncol(d_comp)
 
@@ -30,10 +32,7 @@ remove(p)
 
 # Transformation ####
 trans <- vector("list",n)
-w <- rep(1,11)
-w[3] <- 0.8
-w[5] <- 0.8 
-w[6] <- 0.8
+w <- rep(0.8,11)
 for (i in 1:n){
   trans[[i]] <- local({
     i<-i
