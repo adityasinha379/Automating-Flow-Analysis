@@ -34,7 +34,7 @@ remove(p)
 
 # Transformation ####
 trans <- vector("list",n)
-w <- rep(0.8,11)
+w <- rep(0.5,11)
 for (i in 1:n){
   trans[[i]] <- local({
     i<-i
@@ -47,6 +47,7 @@ colnames(d_trans)<-colnames(d_comp)
 #check transform using violin plot
 temp <- melt(d_trans,id.vars=NULL)
 colnames(temp)[1] <- "marker"
+dev.set(2)
 ggplot(temp, aes(x=marker, y=value)) + geom_violin(fill="gray", col="gray") + guides(fill=FALSE) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + ylim(min(d_trans),max(d_trans))
 remove(temp)
@@ -61,13 +62,13 @@ colnames(d_tsne) <- c('bhSNE1','bhSNE2')
 
 write.csv(d_trans, "temp.csv", row.names = FALSE)
 # louvain clustering in python jupyter notebook Clustering.ipynb
-out <- read.csv("temp.csv")$cluster
 
+out <- read.csv("temp.csv")$cluster
 c <- max(out)
 dev.set(2)
 d_tsne$cluster <- factor(out)
-
 ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2, col=cluster)) + geom_point(size=0.1)
+
 ggplot(d_tsne, aes(x=bhSNE1, y=bhSNE2)) +
   geom_point(aes(col = d_trans$CD16), size=0.1) + scale_color_gradientn(colors=bluered(16))
 
@@ -96,7 +97,7 @@ for(i in c(1:c)){
 }
 #png(filename="Results/Lineage_Tumor_635_comp/1.2.2.violin-5.png",width=1500,height=898)
 dev.set(4)
-grid.arrange(grobs = p, ncol = floor(c/3)+1)
+grid.arrange(grobs = p, ncol = ceiling(sqrt(c)))
 #dev.off()
 remove(p,temp,temp2,titles)
 
