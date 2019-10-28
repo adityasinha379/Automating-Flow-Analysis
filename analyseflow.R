@@ -10,7 +10,7 @@ require(mixtools)
 require(pheatmap)
 
 # Read and explore data ####
-pat_id <- "ccRCC_643T_Tcells"
+pat_id <- "ccRCC_643T_Myeloids"
 d <- read.table(file=paste("Data/",pat_id,".txt",sep=""), header=TRUE,sep="\t")[8:20]
 temp<- colnames(d)
 colnames(d) <- gsub(".*\\.","",temp)
