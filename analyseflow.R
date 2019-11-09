@@ -10,7 +10,7 @@ require(mixtools)
 require(pheatmap)
 
 # Read and explore data ####
-pat_id <- "ccRCC_643T_Myeloids"
+pat_id <- "ccRCC_652T_Myeloids"
 d <- read.table(file=paste("Data/",pat_id,".txt",sep=""), header=TRUE,sep="\t")[8:20]
 temp<- colnames(d)
 colnames(d) <- gsub(".*\\.","",temp)
@@ -34,7 +34,7 @@ remove(p)
 
 # Transformation ####
 trans <- vector("list",n)
-w <- rep(0.5,11)
+w <- rep(0.8,11)
 for (i in 1:n){
   trans[[i]] <- local({
     i<-i
