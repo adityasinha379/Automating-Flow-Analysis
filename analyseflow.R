@@ -10,7 +10,7 @@ require(mixtools)
 require(pheatmap)
 
 # Read and explore data ####
-pat_id <- "ccRCC_652T_Myeloids"
+pat_id <- "ccRCC_652T_Tcells"
 d <- read.table(file=paste("Data/",pat_id,".txt",sep=""), header=TRUE,sep="\t")[8:20]
 temp<- colnames(d)
 colnames(d) <- gsub(".*\\.","",temp)
@@ -35,10 +35,11 @@ remove(p)
 # Transformation ####
 trans <- vector("list",n)
 w <- rep(0.8,11)
+m <- rep(4.5,11)
 for (i in 1:n){
   trans[[i]] <- local({
     i<-i
-    trans1 <- logicleTransform(w = w[i], t = max(d_comp), m = 4.5, a = 0)
+    trans1 <- logicleTransform(w = w[i], t = max(d_comp), m = m[i], a = 0)
   })
 }
 d_trans <- as.data.frame(do.call(cbind, lapply(1:ncol(d_comp), function(i) trans[[i]](d_comp[, i]))))
